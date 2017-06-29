@@ -1,11 +1,11 @@
-import wsgi1
+import wsgi
 
 
 class ControllerTest(object):
     def __init__(self):
         print "ControllerTest!!!"
 
-    def test(self,req):
+    def test(self, req):
         print "req", req
         return {
             'name': 'test',
@@ -13,14 +13,14 @@ class ControllerTest(object):
         }
 
 
-class MyRouterApp(wsgi1.Router):
+class MyRouterApp(wsgi.Router):
     '''
     app
     '''
     def __init__(self, mapper):
         controller = ControllerTest()
         mapper.connect('/test',
-                       controller=wsgi1.Resource(controller),
+                       controller=wsgi.Resource(controller),
                        action='test',
                        conditions={'method': ['GET']})
         super(MyRouterApp, self).__init__(mapper)
