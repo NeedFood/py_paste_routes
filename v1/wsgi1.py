@@ -8,7 +8,6 @@ import webob.exc
 
 
 class APIMapper(routes.Mapper):
- 
     def routematch(self, url=None, environ=None):
         if url is None:
             result = self._match("", environ)
@@ -28,14 +27,12 @@ class Router(object):
 
     @webob.dec.wsgify
     def __call__(self, req):
-
         return self._router
 
     @staticmethod
     @webob.dec.wsgify
     def _dispatch(req):
-    
-        match = req.environ['wsgirog.routing_args'][1]
+        match = req.environ['wsgiorg.routing_args'][1]
         if not match:
             return webob.exc.HTTPNotFound()
         app = match['controller']
@@ -43,16 +40,13 @@ class Router(object):
 
 
 class Request(webob.Request):
- 
     def best_match_content_type(self):
-      
 
         supported = ('application/json',)
         bm = self.accept.best_match(supported)
         return bm or 'application/json'
 
     def get_content_type(self, allowed_content_types):
-      
 
         if 'Content-type' not in self.headers:
             return
@@ -67,7 +61,6 @@ class Request(webob.Request):
 
 class JSONRequestDeserializer(object):
     def has_body(self, request):
-   
 
         if 'transfer-encoding' in request.headers:
             return True
@@ -77,12 +70,12 @@ class JSONRequestDeserializer(object):
         return False
 
     def _sanitizer(self, obj):
-   
+
         return obj
 
     def from_json(self, datastring):
         try:
-            return json.loads(datastring, object_hook =self._sanitizer)
+            return json.loads(datastring, object_hook=self._sanitizer)
         except ValueError:
             msg = _('Malformed JSON in request body.')
             raise webob.exc.HTTPBadRequest(explanation=msg)
@@ -95,9 +88,7 @@ class JSONRequestDeserializer(object):
 
 
 class JSONResponseSerializer(object):
-
     def _sanitizer(self, obj):
-        
 
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
@@ -121,7 +112,7 @@ class Resource(object):
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, request):
-       
+
         action_args = self.get_action_args(request.environ)
         action = action_args.pop('action', None)
 
@@ -141,7 +132,7 @@ class Resource(object):
             return action_result
 
     def dispatch(self, obj, action, *args, **kwargs):
-    
+
         try:
             method = getattr(obj, action)
         except AttributeError:
@@ -150,7 +141,7 @@ class Resource(object):
         return method(*args, **kwargs)
 
     def get_action_args(self, request_environment):
-     
+
         try:
             args = request_environment['wsgiorg.routing_args'][1].copy()
         except Exception:
@@ -167,3 +158,4 @@ class Resource(object):
             pass
 
         return args
+
