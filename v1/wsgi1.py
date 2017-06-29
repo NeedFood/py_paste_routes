@@ -8,6 +8,10 @@ import webob.exc
 
 
 class APIMapper(routes.Mapper):
+    """
+        Handle route matching when url is '' because routes.Mapper returns
+        an error in this case.
+    """
     def routematch(self, url=None, environ=None):
         if url is None:
             result = self._match("", environ)
@@ -27,11 +31,20 @@ class Router(object):
 
     @webob.dec.wsgify
     def __call__(self, req):
+        """
+                   Route the incoming request to a controller based on self.map.
+                   If no match, return a 404.
+        """
         return self._router
 
     @staticmethod
     @webob.dec.wsgify
     def _dispatch(req):
+        """
+                Called by self._router after matching the incoming request to a route
+                and putting the information into req.environ.  Either returns 404
+                or the routed WSGI app's response.
+        """
         match = req.environ['wsgiorg.routing_args'][1]
         if not match:
             return webob.exc.HTTPNotFound()
@@ -40,6 +53,8 @@ class Router(object):
 
 
 class Request(webob.Request):
+    """Add some Openstack API-specific logic to the base webob.Request."""
+
     def best_match_content_type(self):
 
         supported = ('application/json',)
@@ -47,7 +62,7 @@ class Request(webob.Request):
         return bm or 'application/json'
 
     def get_content_type(self, allowed_content_types):
-
+        """Determine content type of the request body."""
         if 'Content-type' not in self.headers:
             return
 
@@ -61,7 +76,11 @@ class Request(webob.Request):
 
 class JSONRequestDeserializer(object):
     def has_body(self, request):
+        """
+               Returns whether a Webob.Request object will possess an entity body.
 
+               :param request:  Webob.Request object
+        """
         if 'transfer-encoding' in request.headers:
             return True
         elif request.content_length > 0:
@@ -70,7 +89,7 @@ class JSONRequestDeserializer(object):
         return False
 
     def _sanitizer(self, obj):
-
+        """Sanitizer method that will be passed to json.loads."""
         return obj
 
     def from_json(self, datastring):
@@ -89,7 +108,7 @@ class JSONRequestDeserializer(object):
 
 class JSONResponseSerializer(object):
     def _sanitizer(self, obj):
-
+        """Sanitizer method that will be passed to json.dumps."""
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
         if hasattr(obj, "to_dict"):
@@ -112,7 +131,7 @@ class Resource(object):
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, request):
-
+        """WSGI method that controls (de)serialization and method dispatch."""
         action_args = self.get_action_args(request.environ)
         action = action_args.pop('action', None)
 
@@ -132,7 +151,7 @@ class Resource(object):
             return action_result
 
     def dispatch(self, obj, action, *args, **kwargs):
-
+        """Find action-specific method on self and call it."""
         try:
             method = getattr(obj, action)
         except AttributeError:
@@ -141,7 +160,7 @@ class Resource(object):
         return method(*args, **kwargs)
 
     def get_action_args(self, request_environment):
-
+        """Parse dictionary created by routes library."""
         try:
             args = request_environment['wsgiorg.routing_args'][1].copy()
         except Exception:
